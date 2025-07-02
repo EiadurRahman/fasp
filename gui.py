@@ -7,6 +7,7 @@ from pathlib import Path
 import zipfile
 import shutil
 import threading # For potentially long operations that might block the UI, though Gradio handles most with generators
+import argparse
 
 # Import your core logic
 from face_swapper import FaceSwapper
@@ -298,4 +299,12 @@ with gr.Blocks(title="Face Swap GUI") as demo:
 
 # Launch the Gradio app
 if __name__ == "__main__":
-    demo.launch(share=False)
+    parser = argparse.ArgumentParser(description="use --live to make it run in live mode")
+    parser.add_argument("--live", action="store_true", help="Run the app in live mode")
+    args = parser.parse_args()
+
+    if args.live:
+        live = True
+    else:
+        live = False
+    demo.launch(share=live,server_port=1313)
