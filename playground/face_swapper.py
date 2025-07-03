@@ -1,45 +1,3 @@
-# Project Context: faceswap
-
-## Project Structure
-
-```
-face_swapper.py // actually swapface
-main.py // uses face_swapper.py and utils.py 
-utils.py // prosses images
-```
-
-## Project Files
-
-### utils.py
-
-```python
-# utils.py
-import cv2
-import os
-
-def load_image(path):
-    if not os.path.exists(path):
-        raise FileNotFoundError(f"Image file not found: {path}")
-    
-    img = cv2.imread(path)
-    if img is None:
-        raise ValueError(f"Could not load image from {path}. Check if it's a valid image file.")
-    return img
-
-def save_image(path, img):
-    # Create output directory if it doesn't exist
-    output_dir = os.path.dirname(path)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    
-    success = cv2.imwrite(path, img)
-    if not success:
-        raise ValueError(f"Failed to save image to {path}")
-```
-
-### face_swapper.py
-
-```python
 # face_swapper.py
 
 import cv2
@@ -58,6 +16,9 @@ provider = "cpu"       # CPU only
 try:
     from insightface.app import FaceAnalysis
     from insightface.model_zoo import get_model
+    from insightface.model_zoo.inswapper import INSwapper
+    # from insightface.model_zoo.reswapper import Reswapper
+
 except ImportError:
     raise ImportError("InsightFace library is required. Install with: pip install insightface")
 
@@ -66,7 +27,17 @@ try:
 except ImportError:
     raise ImportError("ONNX Runtime is required. Install with: pip install onnxruntime")
 
-onnx_model = "inswapper_128.onnx"  # Default model
+# === ONNX MODEL SELECTION ===
+# Choose the ONNX model you want to use for face swapping. Do not delete this section.
+
+# Available models:
+onnx_model = "inswapper_128.onnx"  # Default model best on so far
+# onnx_model = "reswapper_128.onnx"  
+# onnx_model = "reswapper_256.onnx"  
+# onnx_model = "reswapper-1019500.onnx"  
+# onnx_model = "reswapper-429500.onnx"  
+# onnx_model = "reswapper_256-1567500_originalInswapperClassCompatible.onnx"  // this one does not work with inswapper class
+
 
 # Map string to ONNX providers
 def map_provider(provider):
@@ -104,7 +75,9 @@ class FaceSwapper:
             self.face_analyzer = FaceAnalysis(name=detection_model)
             self.face_analyzer.prepare(ctx_id=device_id if self.force_gpu else -1, det_size=(640, 640))
 
-            self.swapper = get_model(model_name, download=True, download_zip=True)
+            # self.swapper = get_model(model_name, download=True, download_zip=True)
+            model_path = 'models/inswapper_128.onnx'
+            self.swapper = get_model(model_path, download=True, download_zip=True)
 
             # ⚙️ Prevent double-initialization
             if hasattr(self.swapper, 'session') and self.swapper.session is not None:
@@ -224,95 +197,13 @@ class FaceSwapper:
 
         for target_face in dst_faces:
             try:
-                result_img = self.swapper.get(result_img, target_face, source_face, paste_back=True)
+                if "inswapper" in onnx_model.lower():
+                    result_img = self.swapper.get(result_img, target_face, source_face )#, paste_back=True)
+                else:
+                    result_img = self.swapper.get(result_img, target_face, source_face)
+
             except Exception as e:
                 print(f"⚠️ Failed to swap one face: {str(e)}")
                 continue
 
         return result_img
-
-```
-
-### main.py
-
-```python
-# main.py
-import os
-import time
-import argparse
-from face_swapper import FaceSwapper
-from utils import load_image, save_image
-from tqdm import tqdm
-from pathlib import Path
-
-# Enable verbose OpenVINO logs (optional)
-os.environ["OPENVINO_VERBOSE"] = "1"
-
-IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".bmp", ".webp"]
-
-def is_image_file(path):
-    return path.suffix.lower() in IMAGE_EXTS
-
-def get_target_images(target_path):
-    path = Path(target_path)
-    if path.is_file() and is_image_file(path):
-        return [path]
-    elif path.is_dir():
-        return sorted([p for p in path.glob("*") if is_image_file(p)])
-    else:
-        raise ValueError(f"Invalid target path: {target_path}")
-
-def ensure_dir(path):
-    os.makedirs(path, exist_ok=True)
-
-def main():
-    parser = argparse.ArgumentParser(description="Face swap using InsightFace + ONNX")
-    parser.add_argument("--source", required=True, help="Path to source image")
-    parser.add_argument("--target", required=True, help="Path to target image or directory")
-    parser.add_argument("--output", default="assets/output", help="Output directory path")
-    args = parser.parse_args()
-
-    source_path = Path(args.source)
-    target_path = Path(args.target)
-    output_dir = Path(args.output)
-    ensure_dir(output_dir)
-
-    if not source_path.exists():
-        raise FileNotFoundError(f"Source image not found: {source_path}")
-
-    source_img = load_image(str(source_path))
-    swapper = FaceSwapper()
-
-    target_images = get_target_images(target_path)
-    if not target_images:
-        print("No valid target images found.")
-        return
-
-    print(f"✓ Found {len(target_images)} image(s) to process.")
-    print("⚙️  Starting face swap...")
-
-    # Time first image to estimate
-    init_time = time.time()
-    test_target_img = load_image(str(target_images[0]))
-    _ = swapper.swap(test_target_img, source_img)
-    est_time = time.time() - init_time
-    total_est = est_time * len(target_images)
-    print(f"⏱ Estimated total time: {total_est:.2f} seconds ({total_est/60:.1f} min)")
-
-    for img_path in tqdm(target_images, desc="🔄 Swapping faces", unit="img"):
-        try:
-            target_img = load_image(str(img_path))
-            result = swapper.swap(target_img, source_img)
-            output_name = f"s_{source_path.stem}-{img_path.stem}{img_path.suffix}"
-            output_path = output_dir / output_name
-            save_image(str(output_path), result)
-        except Exception as e:
-            print(f"⚠️ Failed to process {img_path.name}: {e}")
-
-    print("✅ Face swapping completed.")
-
-if __name__ == "__main__":
-    main()
-
-```
-

@@ -1,0 +1,6 @@
+numpy
+opencv-python
+tqdm
+insightface
+# onnxruntime  # or onnxruntime-gpu / onnxruntime-openvino
+onnxruntime-gpu

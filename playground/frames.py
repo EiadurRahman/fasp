@@ -76,7 +76,7 @@ if __name__ == "__main__":
     if not os.path.exists("temp"):
         os.makedirs("temp")
 
-    input_video = "/home/eiadurrahman/ehm/aish/videos/f07a2228a48467fa87f77c0383e568f7.mp4"
+    input_video = "/home/eiadurrahman/ehm/trgt/0090.avi"
     audio_out = os.path.join("temp", "audio.wav")
     input_frames_dir = os.path.join("temp", "input_frames")
     output_frames_dir = "temp/output_frames"
@@ -85,8 +85,11 @@ if __name__ == "__main__":
     os.makedirs(input_frames_dir, exist_ok=True)
     os.makedirs(output_frames_dir, exist_ok=True)
 
-    # extract_audio(input_video, audio_out)
-    # extract_frames(input_video, input_frames_dir)
+    try:
+        extract_audio(input_video, audio_out)
+    except:
+        print('no audio')
+    extract_frames(input_video, input_frames_dir)
     # clean_file_name(output_frames_dir, "s_2-compressed_")
     # conver_jpeg_to_png(output_frames_dir)
-    stitch_video(output_frames_dir, audio_out, output_path=final_output)
+    # stitch_video(output_frames_dir, audio_out, output_path=final_output)

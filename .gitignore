@@ -1,4 +1,13 @@
 .gradio
-models
-swapenv
-__pycache__
+swapenv/
+__pycache__/
+*.pyc
+models/
+files/
+output/
+temp/
+*.zip
+*.onnx
+assets/
+ignr/
+project_summary.md

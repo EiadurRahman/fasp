@@ -23,7 +23,7 @@ def install_dependencies():
 
 def install_models():
     model_url = "https://huggingface.co/ezioruan/inswapper_128.onnx/resolve/main/inswapper_128.onnx?download=true"
-    model_dir = "models-inswapper"
+    model_dir = "models"
     model_path = os.path.join(model_dir, "inswapper_128.onnx")
 
     os.makedirs(model_dir, exist_ok=True)
@@ -45,6 +45,6 @@ def install_models():
         print(f"❌ Failed to download model. Status code: {response.status_code}")
 
 if __name__ == "__main__":
-    # install_models()
-    install_ffmpeg()
+    install_models()
+    # install_ffmpeg()
  

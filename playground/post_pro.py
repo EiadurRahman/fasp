@@ -41,10 +41,11 @@ def save_output_image(input_path, output_image):
 
 def main():
     # === 🔧 Hardcoded paths for testing ===
-    input_path = "output/s_src_1-trgt_3.png"
-    model_path = "models/GFPGANv1.4.onnx"  # Replace with your model path
-    # model_path = "models/Real-ESRGAN-x4plus.onnx"  # Replace with your model path
-    # model_path = "models/RestoreFormer.onnx"  # Replace with your model path
+    input_path = "assets/input/source/59.png"
+    model_path = "models/GFPGANv1.4.onnx"  # this one works the great but image has to be square.
+    # model_path = "models/codeformer.onnx" # this doesn't work
+    # model_path = "models/Real-ESRGAN-x4plus.onnx"  # needs 128 | prettry bad results
+    # model_path = "models/RestoreFormer.onnx"  # pretty bad results
     resize_to = 512 # Set to None if your model accepts variable input sizes
 
     init_time = time.time()

@@ -1,9 +1,0 @@
-- add ETA for prossesing progress
-- expose `provider` in  the front end, so user can select which provider he wants to use (eg. cuda, cpu, openvino)
-- expose `model` option, eg `inswapper_128.onnx` user can chose which model
-- add post-prossesing
-
-
-# colab :
-
-- find where insightface is located in colab and place model in `.insightface/models`
