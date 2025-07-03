@@ -1,14 +1,11 @@
-# swap.py
-import numpy as np
-import cv2
 from insightface.app import FaceAnalysis
 from insightface.model_zoo import model_zoo
 from types import SimpleNamespace
+import numpy as np
+import cv2
 
-# === Provider Mapping ===
 def map_provider(provider):
     provider = provider.lower()
-
     if provider == "cpu":
         return ["CPUExecutionProvider"]
     elif provider == "cuda":
@@ -23,7 +20,6 @@ def map_provider(provider):
         print(f"⚠️ Unknown provider '{provider}', falling back to CPU")
         return ["CPUExecutionProvider"]
 
-# === Main FaceSwapper Class ===
 class FaceSwapper:
     def __init__(self, model_path, provider='cpu', detection_model='buffalo_l', device_id=0, force_gpu=True):
         self.provider = provider
@@ -46,23 +42,32 @@ class FaceSwapper:
         return self.face_analyzer.get(img)
 
     def swap_one_face(self, target_img, source_face):
+        faces = self.detect_faces(target_img)
+        if not faces:
+            raise ValueError("❌ No face detected in target image.")
+
+        result_img = target_img.copy()
+        face = faces[0]
+        result_img = self.swapper.get(result_img, source_face=source_face, target_face=face)
+
+        return result_img
+
+    def swap_all_faces(self, target_img, source_face):
         """
-        Swaps only the first detected face for now.
-        `source_face` must be a SimpleNamespace(normed_embedding=...)
+        Swaps all detected faces in the target image using a single source face embedding.
         """
         faces = self.detect_faces(target_img)
 
         if not faces:
             raise ValueError("❌ No face detected in target image.")
 
-        target_face = faces[0]  # Only one face supported for now
-
         result_img = target_img.copy()
-        result_img = self.swapper.get(result_img, source_face=source_face, target_face=target_face)
+
+        for i, face in enumerate(faces):
+            try:
+                result_img = self.swapper.get(result_img, source_face=source_face, target_face=face)
+            except Exception as e:
+                print(f"⚠️ Skipping face #{i}: {e}")
+                continue
 
         return result_img
-
-    # Future slot: swap_all_faces(), mask_occlusion(), apply_postprocessing()
-
-
-

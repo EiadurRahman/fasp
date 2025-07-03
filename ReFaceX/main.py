@@ -3,8 +3,8 @@ import os
 import time
 from swap import FaceSwapper
 
-target_image_path = "/home/eiadurrahman/Desktop/faceswap/files/imgs/aish2.jpg"
-source_path = "/home/eiadurrahman/Desktop/faceswap/files/nehal.fsz"  # or .jpg or .npz
+target_image_path = "/home/eiadurrahman/Desktop/faceswap/files/imgs/khlm2.jpg"
+source_path = "/home/eiadurrahman/Desktop/codex/faceset/faceset.fsz"  # or .jpg or .npz
 
 model_path = "models/inswapper_128.onnx"
 
@@ -15,7 +15,7 @@ source_face = utils.process_source(source_path)
 # Initialize swapper
 swapper = FaceSwapper(model_path, provider="cpu")
 init_time = time.time()
-swapped = swapper.swap_one_face(target_img, source_face)
+swapped = swapper.swap_all_faces(target_img, source_face)
 print(f"Swapping completed in {time.time() - init_time:.2f} seconds")
 
 utils.save_image(f"output/swapped_{os.path.basename(target_image_path)}", swapped)
