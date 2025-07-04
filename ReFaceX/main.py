@@ -1,33 +1,72 @@
-import utils
 import os
 import time
+import argparse
+from pathlib import Path
 from swap import FaceSwapper
+import utils
+import img
+import vid as process_video
 
-target_image_path = "/home/eiadurrahman/Desktop/faceswap/files/imgs/khlm2.jpg"
-source_path = "/home/eiadurrahman/Desktop/codex/faceset/faceset.fsz"  # or .jpg or .npz
+SUPPORTED_VIDEO_EXT = {'.mp4', '.avi', '.mov', '.mkv'}
+SUPPORTED_SOURCE_EXT = {'.fsz', '.jpg', '.png', '.npz'}
 
-model_path = "models/inswapper_128.onnx"
+def is_video_file(path):
+    return Path(path).suffix.lower() in SUPPORTED_VIDEO_EXT
 
-# Load data
-target_img = utils.load_image(target_image_path)
-source_face = utils.process_source(source_path)
+def is_source_file(path):
+    return Path(path).suffix.lower() in SUPPORTED_SOURCE_EXT
 
-# Initialize swapper
-swapper = FaceSwapper(model_path, provider="cpu")
-init_time = time.time()
-swapped = swapper.swap_all_faces(target_img, source_face)
-print(f"Swapping completed in {time.time() - init_time:.2f} seconds")
+def process_video_file(video_path, source_path, model_path, output_path, provider):
+    init_time = time.time()
+    process_video.process_video(
+        video_path, source_path, model_path, output_path, provider=provider
+    )
+    print(f"[✓] Processed video: {video_path}")
+    print(f"    └─ Time taken: {time.time() - init_time:.2f}s")
 
-utils.save_image(f"output/swapped_{os.path.basename(target_image_path)}", swapped)
+def run(args):
+    input_path = Path(args.input).expanduser()
+    output_path = Path(args.output).expanduser()
+    source_path = Path(args.source).expanduser()
 
-# import vid as prosses_video
+    assert input_path.exists(), f"Input not found: {input_path}"
+    assert source_path.exists(), f"Source face file not found: {source_path}"
+    assert is_source_file(source_path), f"Unsupported source format: {source_path.suffix}"
 
-# video_path = "/home/eiadurrahman/Desktop/faceswap/files/vids/vid.mp4"
-# # source_path = "faceset.fsz"
-# output_path = "output/vid_swapped.mp4"
+    if output_path.suffix == "":
+        output_path.mkdir(parents=True, exist_ok=True)
+    else:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
-# init_time = time.time()
-# prosses_video.process_video(video_path, source_path, model_path, output_path, provider="cpu")
-# print(f"Video processing completed in {time.time() - init_time:.2f} seconds")
+    source_face = utils.process_source(str(source_path))
+    swapper = FaceSwapper(args.model, provider=args.provider)
 
-utils.clear_temp()
+    if input_path.is_file():
+        if img.is_image_file(input_path):
+            img.process_image_file(str(input_path), source_face, swapper, output_path)
+        elif is_video_file(input_path):
+            video_out = str(output_path) if output_path.suffix else str(output_path / f"swapped_{input_path.stem}.mp4")
+            process_video_file(str(input_path), str(source_path), args.model, video_out, args.provider)
+        else:
+            print(f"[!] Unsupported file format: {input_path.suffix}")
+    elif input_path.is_dir():
+        img.process_images_in_directory(input_path, source_face, swapper, output_path)
+        for file in input_path.iterdir():
+            if is_video_file(file):
+                video_out = output_path / f"swapped_{file.stem}.mp4"
+                process_video_file(str(file), str(source_path), args.model, str(video_out), args.provider)
+    else:
+        print("[!] Input is neither a file nor a directory.")
+
+    utils.clear_temp()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Face Swapper CLI")
+    parser.add_argument("--input", "-i", required=True, help="Path to image/video file or directory")
+    parser.add_argument("--source", "-s", required=True, help="Source face (.jpg/.fsz/.npz)")
+    parser.add_argument("--output", "-o", required=True, help="Output path or directory")
+    parser.add_argument("--model", "-m", default="models/inswapper_128.onnx", help="Path to ONNX model")
+    parser.add_argument("--provider", "-p", default="cpu", choices=["cpu", "cuda", "openvino"], help="Execution provider")
+
+    args = parser.parse_args()
+    run(args)
