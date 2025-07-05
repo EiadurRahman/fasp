@@ -64,6 +64,40 @@ def extract_fsz_images(fsz_path):
     ]
     return image_paths
 
+def create_npz(fsz_path, output_path="out.npz"):
+    """
+    Converts a .fsz (zip of face images) to an .npz file containing a 'super_face' embedding.
+    """
+    if not os.path.exists(fsz_path):
+        raise FileNotFoundError(f"❌ FSZ file not found: {fsz_path}")
+
+    print(f"📦 Extracting and processing images from: {fsz_path}")
+    image_paths = extract_fsz_images(fsz_path)
+    if not image_paths:
+        raise ValueError("❌ No valid images found in FSZ.")
+
+    app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider'])
+    app.prepare(ctx_id=0)
+
+    embeddings = []
+    for path in image_paths:
+        try:
+            img = load_image(path)
+            emb = get_embedding_from_image(img, app)
+            embeddings.append(emb)
+        except Exception as e:
+            print(f"⚠️ Skipping {path}: {e}")
+
+    if not embeddings:
+        raise ValueError("❌ No usable face embeddings were extracted.")
+
+    avg_emb = np.mean(np.vstack(embeddings), axis=0)
+    norm_emb = avg_emb / np.linalg.norm(avg_emb)
+
+    np.savez_compressed(output_path, super_face=norm_emb.astype(np.float32))
+    print(f"✅ Saved averaged embedding to: {output_path}")
+
+
 def get_embedding_from_image(img, app: FaceAnalysis):
     faces = app.get(img)
     if not faces:

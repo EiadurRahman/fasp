@@ -6,7 +6,9 @@ import subprocess
 from tqdm import tqdm
 import cv2
 from swap import FaceSwapper
+from enhancer import Enhancer  
 import utils
+
 
 TEMP_DIR = "temp"
 INPUT_FRAMES_DIR = os.path.join(TEMP_DIR, "input_frames")
@@ -40,7 +42,9 @@ def extract_frames_and_audio(video_path):
     except Exception as e:
         print(f"⚠️ Audio extraction error: {e}")
 
-def process_frames(swapper: FaceSwapper, source_face):
+def process_frames(swapper: FaceSwapper, source_face, enhance=False):  # add flag
+    enhancer = Enhancer() if enhance else None
+
     frame_files = sorted([
         f for f in os.listdir(INPUT_FRAMES_DIR)
         if f.lower().endswith((".png", ".jpg"))
@@ -55,6 +59,10 @@ def process_frames(swapper: FaceSwapper, source_face):
         try:
             img = utils.load_image(input_path)
             swapped = swapper.swap_one_face(img, source_face)
+
+            if enhance:
+                swapped = enhancer.enhance_face_area(swapped)
+
             utils.save_image(output_path, swapped)
         except Exception as e:
             print(f"⚠️ Skipping frame {frame_file}: {e}")
@@ -84,7 +92,7 @@ def cleanup():
         shutil.rmtree(TEMP_DIR)
     print("🧹 Temporary files cleaned up.")
 
-def process_video(video_path, source_path, model_path, output_path, provider="cpu"):
+def process_video(video_path, source_path, model_path, output_path, provider="cpu",enhance=False):
     print(f"🎞️ Starting face swap on video: {video_path}")
     
     extract_frames_and_audio(video_path)
@@ -93,7 +101,7 @@ def process_video(video_path, source_path, model_path, output_path, provider="cp
     swapper = FaceSwapper(model_path=model_path, provider=provider)
     source_face = utils.process_source(source_path)
 
-    process_frames(swapper, source_face)
+    process_frames(swapper, source_face,enhance=enhance)
     merge_video(output_path)
 
     print(f"✅ Output saved to: {output_path}")
