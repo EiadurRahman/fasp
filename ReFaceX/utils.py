@@ -64,20 +64,35 @@ def extract_fsz_images(fsz_path):
     ]
     return image_paths
 
-def create_npz(fsz_path, output_path="out.npz"):
+def create_npz(source_path, output_path="out.npz",providers=['CPUExecutionProvider']):
     """
-    Converts a .fsz (zip of face images) to an .npz file containing a 'super_face' embedding.
+    Converts a .fsz (zip of face images) or a directory of images to an .npz file containing a 'super_face' embedding.
     """
-    if not os.path.exists(fsz_path):
-        raise FileNotFoundError(f"❌ FSZ file not found: {fsz_path}")
+    if not os.path.exists(source_path):
+        raise FileNotFoundError(f"❌ Source path not found: {source_path}")
 
-    print(f"📦 Extracting and processing images from: {fsz_path}")
-    image_paths = extract_fsz_images(fsz_path)
-    if not image_paths:
-        raise ValueError("❌ No valid images found in FSZ.")
-
-    app = FaceAnalysis(name='buffalo_l', providers=['CPUExecutionProvider'])
+    app = FaceAnalysis(name='buffalo_l', providers=providers)
     app.prepare(ctx_id=0)
+
+    # Handle ZIP (.fsz)
+    if source_path.lower().endswith((".fsz", ".zip")):
+        print(f"📦 Extracting and processing images from zip: {source_path}")
+        image_paths = extract_fsz_images(source_path)
+    
+    # Handle image directory
+    elif os.path.isdir(source_path):
+        print(f"📂 Processing image directory: {source_path}")
+        image_paths = [
+            os.path.join(source_path, f)
+            for f in os.listdir(source_path)
+            if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+        ]
+    
+    else:
+        raise ValueError(f"❌ Unsupported source format: {source_path}")
+
+    if not image_paths:
+        raise ValueError("❌ No valid images found.")
 
     embeddings = []
     for path in image_paths:
@@ -96,6 +111,7 @@ def create_npz(fsz_path, output_path="out.npz"):
 
     np.savez_compressed(output_path, super_face=norm_emb.astype(np.float32))
     print(f"✅ Saved averaged embedding to: {output_path}")
+
 
 
 def get_embedding_from_image(img, app: FaceAnalysis):
