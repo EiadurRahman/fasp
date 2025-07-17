@@ -49,6 +49,55 @@ def load_super_face(path):
     emb = data["super_face"]
     return SimpleNamespace(normed_embedding=emb)
 
+def face_detected(source, min_face_size=60, max_yaw=30, providers=['CPUExecutionProvider']):
+    """
+    Detect if there's at least one *valid* face in the image.
+    
+    Parameters:
+    - source: image path or numpy array
+    - min_face_size: minimum width or height of face bbox to accept
+    - max_yaw: optional, max absolute yaw angle to consider a face valid
+    - providers: ONNX runtime providers
+
+    Returns:
+    - True if a good face is detected, False otherwise
+    """
+    if isinstance(source, str):
+        if not os.path.exists(source):
+            raise FileNotFoundError(f"Image file not found: {source}")
+        img = load_image(source)
+    elif isinstance(source, np.ndarray):
+        img = source
+    else:
+        raise TypeError("Input must be a file path or an image array.")
+
+    app = FaceAnalysis(name='buffalo_l', providers=providers)
+    app.prepare(ctx_id=0)
+
+    faces = app.get(img)
+    if not faces:
+        return False
+
+    for face in faces:
+        x1, y1, x2, y2 = face.bbox.astype(int)
+        w = x2 - x1
+        h = y2 - y1
+
+        # Reject small faces
+        if w < min_face_size or h < min_face_size:
+            continue
+
+        # Optional: filter by yaw (rotation left/right)
+        yaw = abs(face.pose[0]) if hasattr(face, 'pose') else 0
+        if yaw > max_yaw:
+            continue
+
+        return True  # Found a usable face
+
+    return False  # No good face found
+
+
+
 def extract_fsz_images(fsz_path):
     if os.path.exists(FSZ_TEMP_DIR):
         shutil.rmtree(FSZ_TEMP_DIR)
@@ -70,6 +119,9 @@ def create_npz(source_path, output_path="out.npz",providers=['CPUExecutionProvid
     """
     if not os.path.exists(source_path):
         raise FileNotFoundError(f"❌ Source path not found: {source_path}")
+    
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
 
     app = FaceAnalysis(name='buffalo_l', providers=providers)
     app.prepare(ctx_id=0)

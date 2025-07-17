@@ -11,3 +11,7 @@ temp/
 assets/
 ignr/
 project_summary.md
+ReFaceX/faces
+ReFaceX/swap
+ReFaceX/.mypy_cache
+ReFaceX/test

@@ -52,12 +52,19 @@ class FaceSwapper:
 
         return result_img
 
-    def swap_all_faces(self, target_img, source_face):
+    def swap_all_faces(self, target_img, source_face, gender='m'):
         """
         Swaps all detected faces in the target image using a single source face embedding.
+        Filters by gender if specified:
+        - 'f' = female only
+        - 'm' = male only
+        - 'a' = all (default)
         """
-        faces = self.detect_faces(target_img)
+        gender = gender.lower()
+        if gender not in ('f', 'm', 'a'):
+            raise ValueError("Invalid gender value. Use 'f', 'm', or 'a'.")
 
+        faces = self.detect_faces(target_img)
         if not faces:
             raise ValueError("❌ No face detected in target image.")
 
@@ -65,6 +72,11 @@ class FaceSwapper:
 
         for i, face in enumerate(faces):
             try:
+                if gender == 'f' and face.gender != 0:
+                    continue
+                elif gender == 'm' and face.gender != 1:
+                    continue
+
                 result_img = self.swapper.get(result_img, source_face=source_face, target_face=face)
             except Exception as e:
                 print(f"⚠️ Skipping face #{i}: {e}")
