@@ -3,8 +3,8 @@ import os
 import shutil
 import sys
 
-PROTO_TXT = "deploy.prototxt"
-MODEL = "res10_300x300_ssd_iter_140000.caffemodel"
+PROTO_TXT = "models/deploy.prototxt"
+MODEL = "models/res10_300x300_ssd_iter_140000.caffemodel"
 
 def download_model():
     import urllib.request

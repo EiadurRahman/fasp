@@ -5,7 +5,7 @@ import utils
 from swap import FaceSwapper
 from enhancer import Enhancer
 
-SUPPORTED_IMAGE_EXT = {'.jpg', '.jpeg', '.png', '.bmp'}
+SUPPORTED_IMAGE_EXT = {'.jpg', '.jpeg', '.png', '.bmp','.webp'}
 
 def is_image_file(path):
     return Path(path).suffix.lower() in SUPPORTED_IMAGE_EXT

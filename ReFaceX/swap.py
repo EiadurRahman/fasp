@@ -52,7 +52,7 @@ class FaceSwapper:
 
         return result_img
 
-    def swap_all_faces(self, target_img, source_face, gender='m'):
+    def swap_all_faces(self, target_img, source_face, gender='f'):
         """
         Swaps all detected faces in the target image using a single source face embedding.
         Filters by gender if specified:

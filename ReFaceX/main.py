@@ -8,7 +8,7 @@ import img
 import vid as process_video
 
 SUPPORTED_VIDEO_EXT = {'.mp4', '.avi', '.mov', '.mkv'}
-SUPPORTED_SOURCE_EXT = {'.fsz', '.jpg', '.png', '.npz'}
+SUPPORTED_SOURCE_EXT = {'.fsz', '.jpg', '.png', '.npz','.jpeg','.webp'}
 
 
 def is_video_file(path):

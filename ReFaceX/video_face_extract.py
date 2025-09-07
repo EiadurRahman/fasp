@@ -76,10 +76,18 @@ def extract_faces_from_video(video_path, output_dir, max_frames=None, diff_thres
     print(f"🎉 Extraction complete. Saved {saved} frames to {output_dir}")
 
 
-if __name__ == "__main__":          
+if __name__ == "__main__":
+    video_path = input("Enter path to video file: ").strip()
+    
+    # Construct output_dir as <video_path_dir>/imgs
+    base_dir = os.path.dirname(video_path)
+    output_dir = os.path.join(base_dir, "imgs")
+    
     extract_faces_from_video(
-        video_path="/home/eiadurrahman/ayo/mrm/mrim.mp4",
-        output_dir="/home/eiadurrahman/ayo/mrm/imgs",
+        video_path=video_path,
+        output_dir=output_dir,
         diff_threshold=30,
         frame_skip=3
     )
+
+    print(f"✅ Faces saved to: {output_dir}")
